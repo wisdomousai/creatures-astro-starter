@@ -1,0 +1,39 @@
+---
+// The window frame the crew walk on (src/lib/creatures.ts): a line round the window at
+// --frame-inset, and paper outside it, so the page scrolls under the band they use instead
+// of under them. Decorative: aria-hidden, no pointer events, gone in print.
+---
+
+<div class="window-frame" aria-hidden="true">
+  <div class="matte"></div>
+  <div class="line"></div>
+</div>
+
+<style>
+  .window-frame {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .matte {
+    position: absolute;
+    inset: var(--band);
+    border-radius: calc(var(--frame-radius) / 2);
+    box-shadow: 0 0 0 100vmax var(--paper);
+  }
+
+  .line {
+    position: absolute;
+    inset: var(--frame-inset);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--frame-radius);
+  }
+
+  @media print {
+    .window-frame {
+      display: none;
+    }
+  }
+</style>

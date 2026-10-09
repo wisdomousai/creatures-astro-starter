@@ -1,0 +1,856 @@
+/*
+ * The site in the box. The site's tokens (src/styles/global.css), each mixed
+ * from its day colour to its night one by --dim, which the dimmer turns.
+ */
+:root {
+  --dim: 0;
+  --mix: calc(var(--dim) * 100%);
+  --paper: color-mix(in oklab, #f4f4f1, #1f1f1d var(--mix));
+  --paper-deep: color-mix(in oklab, #e9e9e5, #282826 var(--mix));
+  --card: color-mix(in oklab, #fff, #2b2b28 var(--mix));
+  --ink: color-mix(in oklab, #111, #ecece8 var(--mix));
+  --ink-soft: color-mix(in oklab, #55554f, #b9b9b2 var(--mix));
+  --ink-faint: color-mix(in oklab, #6e6e68, #95958e var(--mix));
+  --rule: color-mix(in oklab, #e0e0db, #383834 var(--mix));
+  --rule-strong: color-mix(in oklab, #d6d6d1, #4c4c46 var(--mix));
+  /* The grey bars where the writing will go. */
+  --bar: color-mix(in oklab, #e4e4df, #3a3a36 var(--mix));
+  --shade: color-mix(in oklab, rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.45) var(--mix));
+  --frame-inset: 8px;
+  --frame-radius: 16px;
+  --bot: 22px;
+  --serif: 'Newsreader Variable', Georgia, serif;
+  --sans: 'Schibsted Grotesk Variable', system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (min-width: 40rem) {
+  :root {
+    --frame-inset: 10px;
+    --frame-radius: 20px;
+    --bot: 28px;
+  }
+}
+@media (min-width: 60rem) {
+  :root {
+    --frame-inset: 12px;
+    --frame-radius: 24px;
+    --bot: 38px;
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font:
+    16px/1.55 var(--sans),
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.skip {
+  position: fixed;
+  left: 50%;
+  top: 0;
+  z-index: 20;
+  translate: -50% -120%;
+  padding: 0.4rem 0.8rem;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 0 0 6px 6px;
+  text-decoration: none;
+}
+.skip:focus {
+  translate: -50% 0;
+}
+
+.frame {
+  position: fixed;
+  inset: var(--frame-inset);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--frame-radius);
+  pointer-events: none;
+  z-index: 5;
+}
+/* The pages play on the monitor's glass: site.ts cuts them to it every frame. */
+#room {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  contain: layout paint;
+  clip-path: inset(50%);
+}
+/* The lobby, the front page: just the box, white and empty. The glass, the dial and the
+   focus button stay out (the monitor isn't fitted: site.ts); only the concierges' signs
+   (their buttons) and any bubble are up. */
+html[data-welcome] .skip,
+html[data-welcome] #room,
+html[data-welcome] #gear > :not(.say, .hold) {
+  visibility: hidden;
+}
+#crew {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 6;
+}
+#hits {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 7;
+}
+#gear {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+#gear > * {
+  pointer-events: auto;
+}
+/* Focused (site.ts): the page over the room and the crew (nothing behind it to click), and of
+   the gear only the tuner, the focus button and anyone's question over it. */
+:root[data-focus] #room {
+  z-index: 7;
+}
+:root[data-focus] #hits {
+  z-index: 6;
+}
+:root[data-focus] #gear > :not(.tuner, .focus, .say) {
+  visibility: hidden;
+}
+/* The focus button, laid in the glass's top right corner every frame (site.ts). */
+.focus {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--paper) 86%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+}
+.focus[hidden] {
+  display: none;
+}
+.focus svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.focus[aria-pressed='true'] .out,
+.focus[aria-pressed='false'] .in {
+  display: none;
+}
+#gear > .rigging {
+  pointer-events: none;
+}
+
+/* ---------- The rigging ---------- */
+
+.sheet-lines {
+  stroke: var(--ink-faint);
+  stroke-width: 1.2;
+  fill: none;
+}
+.sheet-parts {
+  fill: var(--ink);
+}
+.sheet-posts .sheet-parts {
+  fill: var(--ink-soft);
+}
+.sheet-pin .sheet-rig {
+  display: none;
+}
+
+/* ---------- The pages ---------- */
+
+.paper {
+  box-sizing: border-box;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+  background: var(--card);
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  box-shadow:
+    0 1px 2px var(--shade),
+    0 calc(4px + var(--lift, 0) * 26px) calc(14px + var(--lift, 0) * 40px)
+      color-mix(in oklab, var(--shade), transparent calc(40% - var(--lift, 0) * 30%));
+}
+.page {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 2.4rem clamp(1.1rem, 4vw, 2.6rem) 3rem;
+  opacity: calc(1 - var(--veil, 0) * 0.75);
+}
+.page h1 {
+  margin: 0 0 0.5rem;
+  font: 500 clamp(1.9rem, 3.6vw, 2.8rem) / 1.08 var(--serif);
+  letter-spacing: -0.015em;
+}
+.page h1:focus {
+  outline: none;
+}
+/* On a pinned page, the way back by name (the pin through the page does the same). */
+.page .back {
+  display: inline-block;
+  margin: -0.9rem 0 1.1rem;
+  font: 600 0.8rem/1.3 var(--sans);
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.page .back:hover,
+.page .back:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.covered .page .back {
+  display: none;
+}
+/* Links in the writing. */
+.done a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+/* Covered by a page pinned over it: only its top shows, so its title comes up small. */
+.page,
+.page h1 {
+  transition:
+    padding-top 0.35s,
+    font-size 0.35s;
+}
+.covered .page {
+  padding-top: 0.7rem;
+}
+.covered .page h1 {
+  font-size: 1.2rem;
+}
+.page h2 {
+  margin: 2.2rem 0 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--rule);
+  font: 600 0.72rem/1 var(--sans);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.lede {
+  margin: 0.4rem 0 0;
+  font: italic 1.2rem/1.45 var(--serif);
+  color: var(--ink-soft);
+  max-width: 34rem;
+}
+.lede .mail {
+  color: var(--ink);
+  font-style: normal;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.page hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2rem 0 1.4rem;
+}
+
+.bar {
+  display: block;
+  height: 0.62em;
+  margin: 0.62em 0;
+  border-radius: 3px;
+  background: var(--bar);
+}
+.bar.h1 {
+  height: 0.62em;
+  margin: 0.2em 0 0.3em;
+}
+.bar.meta {
+  height: 0.5em;
+  opacity: 0.7;
+}
+.para {
+  margin: 1.3rem 0;
+}
+.figure,
+.portrait {
+  display: block;
+  border-radius: 4px;
+  background:
+    linear-gradient(
+      135deg,
+      transparent 49.4%,
+      var(--rule-strong) 49.6%,
+      var(--rule-strong) 50.4%,
+      transparent 50.6%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 49.4%,
+      var(--rule-strong) 49.6%,
+      var(--rule-strong) 50.4%,
+      transparent 50.6%
+    ),
+    var(--paper-deep);
+}
+.figure {
+  aspect-ratio: 16 / 10;
+  margin: 0 0 0.9rem;
+}
+.figure.wide {
+  aspect-ratio: 16 / 8;
+  margin: 1.4rem 0;
+}
+.portrait {
+  width: min(11rem, 40%);
+  aspect-ratio: 4 / 5;
+  float: right;
+  margin: 0 0 1rem 1.4rem;
+}
+
+/* The cards pinned on a page: pull one off and it's the next page. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: 1.5rem 1.3rem;
+  margin: 1.2rem 0 0.5rem;
+  padding-top: 0.4rem;
+}
+.card {
+  position: relative;
+  display: block;
+  padding: 1.15rem 1rem 1rem;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  color: inherit;
+  text-decoration: none;
+  rotate: var(--turn, 0deg);
+  box-shadow: 0 1px 2px var(--shade);
+  cursor: grab;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition:
+    translate 0.25s cubic-bezier(0.3, 1.6, 0.5, 1),
+    rotate 0.25s,
+    box-shadow 0.25s;
+}
+.card:hover {
+  translate: 0 -3px;
+  box-shadow: 0 6px 14px var(--shade);
+}
+.card .bar.card-title {
+  height: 0.7em;
+  margin: 0.45em 0;
+  background: color-mix(in oklab, var(--bar), var(--ink) 12%);
+}
+.card .bar.card-title + .bar.card-title {
+  background: var(--bar);
+}
+.card .bar.meta {
+  margin-top: 1em;
+}
+/* The pin through its top. */
+.pin {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--ink-faint), var(--ink) 60%);
+  box-shadow: 0 2px 2px var(--shade);
+}
+.card.pulling {
+  cursor: grabbing;
+  z-index: 2;
+  box-shadow: 0 12px 26px var(--shade);
+  transition: box-shadow 0.2s;
+}
+/* Gone up as a page: where it was, a pinhole and a faint outline. */
+.card.off {
+  background: transparent;
+  border: 1px dashed var(--rule-strong);
+  box-shadow: none;
+  translate: none;
+}
+.card.off > * {
+  visibility: hidden;
+}
+.card.off > .pin {
+  visibility: visible;
+  top: 4px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  background: var(--ink-faint);
+  box-shadow: none;
+}
+.card.back {
+  animation: settle 0.6s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes settle {
+  0% {
+    rotate: calc(var(--turn, 0deg) - 4deg);
+    translate: 0 -6px;
+  }
+  45% {
+    rotate: calc(var(--turn, 0deg) + 2deg);
+  }
+  100% {
+    rotate: var(--turn, 0deg);
+    translate: 0 0;
+  }
+}
+/* A post's or a project's card: its number, its name, its line, and when or where. */
+.card-text > span {
+  display: block;
+}
+.card-text .card-kicker,
+.card-text .card-meta {
+  font: 600 0.68rem/1.3 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.card-text .card-kicker {
+  margin-bottom: 0.4rem;
+}
+.card-text .card-name {
+  font: 600 1.15rem/1.2 var(--serif);
+}
+.card-text .card-line {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.card-text .card-meta {
+  margin-top: 0.75rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--rule);
+}
+
+/* A page of the site's own: its number over its title, when it was written, its body as
+   the site sets it (global.css .prose), headings and rules as there, not the box's. */
+.page .kicker,
+.page .meta-line {
+  margin: 0 0 0.6rem;
+  font: 600 0.72rem/1.3 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.page .meta-line {
+  margin: 1.2rem 0 0;
+}
+.page .prose {
+  margin-top: 1.8rem;
+  font-family: var(--serif);
+}
+.page .prose h2 {
+  margin: 2.4em 0 0;
+  padding: 0;
+  border: 0;
+  font: 400 1.4rem/1.15 var(--serif);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--ink);
+}
+.page .prose h3 {
+  margin: 1.8em 0 0;
+}
+.page .prose hr {
+  width: 4rem;
+  margin: 3em 0;
+  border-top-color: var(--ink);
+}
+.page .prose[aria-busy] {
+  font-family: inherit;
+}
+.page h3 {
+  margin: 2rem 0 0.4rem;
+  font: 600 1.05rem/1.3 var(--sans);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The card's face, over a page as it unfolds out of it. */
+.cover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  margin: 0;
+  rotate: none;
+  transform-origin: 0 0;
+  pointer-events: none;
+  transition: none;
+}
+
+/* The pin through the top of a pinned page: pull it out to take the page down. */
+.pushpin {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--ink-faint), var(--ink) 62%);
+  box-shadow: 0 3px 4px var(--shade);
+  cursor: pointer;
+  pointer-events: none;
+  opacity: 0;
+}
+.pushpin::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--ink), var(--card) 25%);
+}
+.pushpin.in {
+  pointer-events: auto;
+  opacity: 1;
+  animation: pin-in 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.pushpin.in:hover {
+  translate: 0 -2px;
+  box-shadow: 0 6px 8px var(--shade);
+}
+.pushpin.out {
+  animation: pin-out 0.3s ease-in forwards;
+}
+@keyframes pin-in {
+  from {
+    opacity: 0;
+    translate: 0 -18px;
+    scale: 1.5;
+  }
+}
+@keyframes pin-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 0 -22px;
+    scale: 1.4;
+  }
+}
+
+/* The glass: a faint curve of light over the top of whatever page is on it, and the
+   corners a touch darker, like an old tube. */
+.sheen {
+  position: absolute;
+  z-index: 60;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 30% -10%, rgb(255 255 255 / 0.1), transparent 55%),
+    radial-gradient(140% 140% at 50% 50%, transparent 62%, var(--shade) 100%);
+}
+.sheet-screen .paper {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ---------- The gear ---------- */
+
+/* The tuning dial, hung from the top of the frame: as wide as its stations, or as the
+   frame, and then they slide along under its window (gear.ts). */
+.tuner {
+  position: fixed;
+  top: calc(var(--frame-inset) - 1px);
+  left: 0;
+  right: 0;
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--frame-inset) - 16px);
+  box-sizing: border-box;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.3rem 0.4rem 0.35rem 0.55rem;
+  background: var(--card);
+  border: 1px solid var(--rule-strong);
+  border-top-color: transparent;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 3px 8px var(--shade);
+  font: 600 0.7rem/1 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+  touch-action: none;
+}
+.tuner-scale {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.5rem 0 0.75rem;
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(90deg, var(--ink-faint) 0 1px, transparent 1px 6px) 0 100% / 100% 4px
+      no-repeat,
+    var(--paper-deep);
+  box-shadow: inset 0 1px 3px var(--shade);
+  cursor: ew-resize;
+}
+.tuner-strip {
+  display: flex;
+  gap: 0.95rem;
+  width: max-content;
+  padding-inline: 0.6rem;
+}
+/* Sliding, the window fades out on a side with more stations beyond it. */
+.tuner.sliding .tuner-scale {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--fade-l, 0px),
+    #000 calc(100% - var(--fade-r, 0px)),
+    transparent
+  );
+}
+.tuner-station {
+  color: var(--ink-faint);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.tuner-station:hover,
+.tuner-station[aria-current='page'] {
+  color: var(--ink);
+}
+.tuner-needle {
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 2px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ink);
+  pointer-events: none;
+}
+.tuner.turning .tuner-scale {
+  cursor: grabbing;
+}
+.tuner-knob {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+}
+.tuner-knob svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.knob-rim {
+  fill: var(--ink);
+}
+.knob-knurl {
+  stroke: var(--ink-soft);
+  stroke-width: 1.1;
+}
+.knob-cap {
+  fill: color-mix(in oklab, var(--ink), var(--card) 18%);
+}
+.knob-mark {
+  stroke: var(--card);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+/* The dials: unseen over the monitor's chin knobs (site.ts lays them there each frame), the
+   knobs themselves showing where they're turned. */
+.dimmer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.dimmer svg {
+  visibility: hidden;
+}
+.dimmer:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.glyph-plain {
+  fill: var(--card);
+  stroke: var(--ink-soft);
+  stroke-width: 1;
+}
+.glyph-sun {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+.glyph-moon {
+  fill: var(--ink-soft);
+}
+.glyph-ticks {
+  stroke: var(--ink-faint);
+  stroke-width: 1;
+}
+/* A speech bubble over whoever is asking (Hoot, the cat and Bolt). */
+.say {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(19rem, calc(100vw - 2 * var(--frame-inset) - 24px));
+  padding: 0.7rem 0.9rem 0.75rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font: 0.95rem / 1.4 var(--sans);
+  box-shadow: 0 6px 18px -8px var(--shade);
+  opacity: 0;
+  scale: 0.9;
+  transform-origin: var(--tail, 50%) 100%;
+  transition:
+    opacity 0.2s,
+    scale 0.25s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.say.on {
+  opacity: 1;
+  scale: 1;
+}
+/* Its tail, pointing down at him. */
+.say::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: clamp(14px, var(--tail, 50%), calc(100% - 14px));
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: solid var(--rule-strong);
+  border-width: 0 1px 1px 0;
+  background: var(--card);
+  rotate: 45deg;
+}
+.say-text {
+  margin: 0;
+}
+.say-answers {
+  display: none;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+.say.asking .say-answers {
+  display: flex;
+}
+.say-answers button {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.say-answers button:hover,
+.say-answers button:focus-visible {
+  background: var(--ink);
+  color: var(--card);
+}
+
+@media (max-width: 719px) {
+  /* On a phone the stations slide along under the dial's window, at a size to read. */
+  .tuner {
+    gap: 0.3rem;
+    padding-left: 0.35rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+  }
+  .tuner-scale {
+    padding: 0.5rem 0 0.75rem;
+  }
+  .tuner-strip {
+    gap: 1.1rem;
+    padding-inline: 0.5rem;
+  }
+  .tuner-knob {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .pushpin {
+    transition: none;
+    animation: none !important;
+  }
+}
