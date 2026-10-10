@@ -117,6 +117,16 @@ const chooseMode = `(() => {
         </nav>
         <div class="actions">
           {
+            site.shell === 'room' && (
+              <a class="mode" href="?play" aria-label={`${MODES.room}: play this site in the room`}>
+                <span class="on" aria-hidden="true">
+                  {MODES.clean}
+                </span>
+                <span aria-hidden="true">{MODES.room}</span>
+              </a>
+            )
+          }
+          {
             contact && (
               <a
                 class="contact"
@@ -267,12 +277,49 @@ const chooseMode = `(() => {
     color: var(--paper);
   }
 
-  /* On a phone the sections don't fit one row: they wrap, all of them in view. */
+  /* The page or the room (lib/mode.ts): a switch with the page pressed, the whole of it a
+     way over to the room. */
+  .mode {
+    display: flex;
+    gap: 2px;
+    height: 2.75rem;
+    padding: 4px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--card);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .mode span {
+    display: flex;
+    align-items: center;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+  }
+
+  .mode .on {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .mode:hover span:not(.on) {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  /* On a phone the sections don't fit one row: they wrap, all of them in view. Nor does
+     the whole switch beside the wordmark: only its way over to the room. */
   @media (max-width: 39.99rem) {
     .nav {
       flex-wrap: wrap;
       justify-content: center;
       border-radius: 1.5rem;
+    }
+
+    .mode .on {
+      display: none;
     }
   }
 
@@ -291,7 +338,8 @@ const chooseMode = `(() => {
       gap: 0.625rem;
     }
 
-    .contact {
+    .contact,
+    .mode {
       height: 2.875rem;
     }
 
