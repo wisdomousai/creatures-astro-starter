@@ -1,6 +1,7 @@
 import { Crew } from '@wisdomousai/creatures';
 import { version } from '@wisdomousai/creatures/package.json';
 import { site, url } from '../site';
+import { Sharpness } from './sharpness';
 
 /** The models of the version that's installed, from jsDelivr. */
 const MODELS = `https://cdn.jsdelivr.net/npm/@wisdomousai/creatures@${version}/models/`;
@@ -35,7 +36,9 @@ export function creatures() {
     roster,
     max,
     every,
+    tick: () => sharpness.frame(),
   });
+  const sharpness = new Sharpness(crew);
   crew.start();
   if (first) setTimeout(() => void crew.call(first), 800);
   return crew;

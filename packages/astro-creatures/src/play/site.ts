@@ -8,6 +8,7 @@ import { Monitor, RISE, RISE_MAX, glassRect, headroom } from '../components/robo
 import { Rail, Sheet, type Flight, type Rect, type View } from '../components/robot/sheets';
 import { Dimmer, Rigging, Tuner } from '../components/robot/gear';
 import { switchTo } from '../lib/mode';
+import { Sharpness } from '../lib/sharpness';
 import { site, url } from '../site';
 import { LOBBY, MODES } from '../stations';
 import { lobby } from './lobby';
@@ -115,6 +116,8 @@ const crew: Crew = new Crew({
 // The box's drawing goes in just before the crew's canvas: the pages show between.
 crew.box?.el.after(room);
 const scene = crew.stage.scene;
+/** Drawn no sharper than the window's worth of pixels allows, and less while it's slow. */
+const sharpness = new Sharpness(crew);
 
 const monitor = new Monitor(scene, url('/devices/'), phone ? 'phone' : 'monitor');
 monitor.depth = DEPTH;
@@ -855,6 +858,7 @@ addEventListener('popstate', (e) => {
 // ---------- Every frame ----------
 
 function tick(dt: number, f: Frame) {
+  sharpness.frame();
   const view: View = {
     width: innerWidth,
     height: innerHeight,
